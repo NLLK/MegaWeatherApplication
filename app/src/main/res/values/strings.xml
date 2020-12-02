@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Mega Weather Application</string>
+    <string name="title_home">Главная</string>
+    <string name="title_dashboard">Выбор города</string>
+    <string name="title_notifications">Smth Else</string>
+</resources>
