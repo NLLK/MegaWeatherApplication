@@ -2,6 +2,9 @@ package com.nllk.megaweatherapplication;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.location.Location;
+
+import java.lang.reflect.Array;
 
 public class Preferencies {
 
@@ -26,5 +29,4 @@ public class Preferencies {
     void setZipcode(String zip){
         prefs.edit().putString("zip", zip).apply();
     }
-
 }
