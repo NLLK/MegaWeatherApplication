@@ -1,35 +1,36 @@
-package com.nllk.megaweatherapplication.ui.dashboard;
+package com.nllk.megaweatherapplication.ui.home;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.DialogFragment;
 
 import com.nllk.megaweatherapplication.R;
 
-public class DashboardFragment extends Fragment {
+public class ChooseCityDialog extends DialogFragment {
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.choose_city_fragment, container, false);
+    @NonNull
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        AlertDialog.Builder builder=new AlertDialog.Builder(getActivity());
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.choose_city_fragment, null,false);
 
-        AutoCompleteTextView view = root.findViewById(R.id.autoCompleteTextView);
+        AutoCompleteTextView autoCompleteview = view.findViewById(R.id.autoCompleteTextView);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(), R.layout.support_simple_spinner_dropdown_item, getCitiesArray());
-        view.setAdapter(adapter);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), R.layout.support_simple_spinner_dropdown_item, getCitiesArray());
+        autoCompleteview.setAdapter(adapter);
 
-        return root;
+        builder.setView(autoCompleteview);
+        // Остальной код
+        return builder.create();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
 
     public String[] getCitiesArray() {
         return new String[]{"Абаза", "Абакан", "Абдулино", "Абинск", "Агидель", "Агрыз", "Адыгейск",

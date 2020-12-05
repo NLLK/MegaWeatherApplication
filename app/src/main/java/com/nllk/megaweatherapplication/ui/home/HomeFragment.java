@@ -33,14 +33,17 @@ import com.nllk.megaweatherapplication.Preferencies;
 import com.nllk.megaweatherapplication.R;
 import com.nllk.megaweatherapplication.WeatherAPI;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URL;
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
@@ -74,6 +77,7 @@ public class HomeFragment extends Fragment {
 
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         cityField = root.findViewById(R.id.city_field);
+        cityField.setOnClickListener(view -> callDialog());
         detailsField = root.findViewById(R.id.details_field);
         updatedField = root.findViewById(R.id.updated_field);
         currentTemperatureField = root.findViewById(R.id.current_temperature_field);
@@ -109,8 +113,20 @@ public class HomeFragment extends Fragment {
 
         super.onResume();
         reloadLocation(null);
-        if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
-        else renderWeather(lastJSON);
+        updateWeatherData(preferencies.getZipcode());
+/*        if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
+        else {
+            Date cals = Calendar.getInstance(TimeZone.getDefault()).getTime();
+            Long cur = System.currentTimeMillis();
+            Long lastUpdate = null;
+            try {
+                lastUpdate = lastJSON.getJSONObject("current").getLong("dt") * 1000;
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } finally {
+                if (lastUpdate-cur > 5*60*1000) updateWeatherData(preferencies.getZipcode());
+            }
+        }*/
     }
     @Override
     public void onPause() {
@@ -138,7 +154,6 @@ public class HomeFragment extends Fragment {
     private void updateWeatherData(final String city){
         new Thread(){
             public void run(){
-
                 final JSONObject json = WeatherAPI.getJSON(getActivity().getApplicationContext(), city);
                 lastJSON = json;
                 if(json == null){
@@ -164,14 +179,14 @@ public class HomeFragment extends Fragment {
             String direction="";
             switch (deg)
             {
-                case 0: direction = "З"; break;
-                case 1: direction = "С/З"; break;
-                case 2: direction = "С"; break;
-                case 3: direction = "С/В"; break;
-                case 4: direction = "В"; break;
-                case 5: direction = "Ю/В"; break;
-                case 6: direction = "Ю"; break;
-                case 7: direction = "Ю/З"; break;
+                case 0: direction = "С"; break;
+                case 1: direction = "С/В"; break;
+                case 2: direction = "В"; break;
+                case 3: direction = "Ю/В"; break;
+                case 4: direction = "Ю"; break;
+                case 5: direction = "Ю/З"; break;
+                case 6: direction = "З"; break;
+                case 7: direction = "С/З"; break;
             }
 
             String wind_speed = String.valueOf((int)Double.parseDouble(main.getString("wind_speed")));
@@ -266,5 +281,10 @@ public class HomeFragment extends Fragment {
         if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
         else renderWeather(lastJSON);
 
+    }
+    public void callDialog()
+    {
+        ChooseCityDialog dialog = new ChooseCityDialog();
+        dialog.show(getFragmentManager(),"ChooseCity");
     }
 }
