@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.chip.Chip;
 import com.nllk.megaweatherapplication.Preferencies;
 import com.nllk.megaweatherapplication.R;
 import com.nllk.megaweatherapplication.WeatherAPI;
@@ -57,8 +58,10 @@ public class HomeFragment extends Fragment {
     TextView pressureField;
     TextView humidityField;
     TextView chanceOfRainField;
-
+    Chip chipGPS;
+    JSONObject lastJSON;
     ImageView weatherIcon;
+
     Preferencies preferencies;
 
     Location currentLocation;
@@ -75,6 +78,7 @@ public class HomeFragment extends Fragment {
         updatedField = root.findViewById(R.id.updated_field);
         currentTemperatureField = root.findViewById(R.id.current_temperature_field);
         weatherIcon = root.findViewById(R.id.weather_icon);
+        chipGPS = root.findViewById(R.id.chip_gps);
 
         windField = root.findViewById(R.id.wind_field);
         pressureField = root.findViewById(R.id.pressure_field);
@@ -93,7 +97,7 @@ public class HomeFragment extends Fragment {
         chanceOfRainField.setTypeface(font);
 
         Button reload  = root.findViewById(R.id.btnReloadLocation);
-        reload.setOnClickListener(view -> reloadLocation(null));
+        reload.setOnClickListener(view -> reloadView(null));
 
         locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
         preferencies = new Preferencies(getActivity());
@@ -102,8 +106,11 @@ public class HomeFragment extends Fragment {
     }
     @Override
     public void onResume() {
+
         super.onResume();
         reloadLocation(null);
+        if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
+        else renderWeather(lastJSON);
     }
     @Override
     public void onPause() {
@@ -133,9 +140,10 @@ public class HomeFragment extends Fragment {
             public void run(){
 
                 final JSONObject json = WeatherAPI.getJSON(getActivity().getApplicationContext(), city);
+                lastJSON = json;
                 if(json == null){
                     handler.post(() -> Toast.makeText(getActivity().getApplicationContext(),
-                            "А нет такого города, хах",
+                            "Ошибка! Город не обнаружен!",
                             Toast.LENGTH_LONG).show());
                 } else {
                     handler.post(() -> renderWeather(json));
@@ -146,22 +154,39 @@ public class HomeFragment extends Fragment {
 
     private void renderWeather(JSONObject json){
         try {
-            //город из другого запроса надо брать, по идеи
             cityField.setText(json.getString("city"));
 
             JSONObject main = json.getJSONObject("current");
             JSONObject daily = json.getJSONArray("daily").getJSONObject(0);
             currentTemperatureField.setText((int)main.getDouble("temp")+ " ℃");
-            windField.setText(main.getString("wind_speed"));
-            //TODO: направление
+
+            int deg = main.getInt("wind_deg")/45;
+            String direction="";
+            switch (deg)
+            {
+                case 0: direction = "З"; break;
+                case 1: direction = "С/З"; break;
+                case 2: direction = "С"; break;
+                case 3: direction = "С/В"; break;
+                case 4: direction = "В"; break;
+                case 5: direction = "Ю/В"; break;
+                case 6: direction = "Ю"; break;
+                case 7: direction = "Ю/З"; break;
+            }
+
+            String wind_speed = String.valueOf((int)Double.parseDouble(main.getString("wind_speed")));
+
+            windField.setText(wind_speed+" м/с, "+direction);
+
             pressureField.setText(main.getString("pressure")+" мм рт.ст.");
             humidityField.setText(main.getString("humidity")+"%");
 
-            chanceOfRainField.setText(daily.getString("pop")+"%");
+            String pop = String.valueOf((int)Double.parseDouble(daily.getString("pop"))*100);
+            chanceOfRainField.setText( pop+"%");
 
             DateFormat df = DateFormat.getTimeInstance();
             String updatedOn = df.format(new Date(main.getLong("dt")*1000));
-            updatedField.setText("Последнее обновление: " + updatedOn);
+            updatedField.setText("Обновлено в " + updatedOn);
 
             JSONObject details = main.getJSONArray("weather").getJSONObject(0);
             detailsField.setText(details.getString("description"));
@@ -185,17 +210,9 @@ public class HomeFragment extends Fragment {
                 ActivityCompat.requestPermissions((Activity) getActivity().getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);}
             editLocation(locationManager.getLastKnownLocation(provider));
         }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-        }
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
     };
 
-    private void editView()
+    private void updateLocation()
     {
         Geocoder geocoder = new Geocoder(getActivity(), Locale.ENGLISH);
         try
@@ -205,12 +222,12 @@ public class HomeFragment extends Fragment {
             if (addressList!=null)
             {
                 String zip = addressList.get(0).getPostalCode();
-                preferencies.setZipcode(zip);
-                updateWeatherData(preferencies.getZipcode()+","+addressList.get(0).getCountryCode());
+                preferencies.setZipcode(zip+","+addressList.get(0).getCountryCode());
+                //updateWeatherData(preferencies.getZipcode());
             }
             else {
                 handler.post(() -> Toast.makeText(getActivity().getApplicationContext(),
-                        "А нет такого города, хах",
+                        "Ошибка! Город не обнаружен.",
                         Toast.LENGTH_LONG).show());
             }
 
@@ -238,9 +255,16 @@ public class HomeFragment extends Fragment {
                     e.printStackTrace();
                 }
             }
-            handler.post(() -> editView());
+            handler.post(() -> updateLocation());
         };
         Thread thread = new Thread(runnable);
         thread.start();
+    }
+    public void reloadView(View view)
+    {
+        Log.i("Weather", "Reload View");
+        if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
+        else renderWeather(lastJSON);
+
     }
 }

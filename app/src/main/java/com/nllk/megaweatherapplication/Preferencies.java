@@ -35,10 +35,17 @@ public class Preferencies {
         return prefs.getString("zip", "644000, RU");
     }*/
 
-    public void setLocation(Location loc){
+/*    public void setLocation(Location loc){
         prefs.edit()
                 .putString("lat", String.valueOf(loc.getLatitude()))
                 .putString("lon", String.valueOf(loc.getLongitude()))
                 .apply();
+    }*/
+    public void setCitySourse(String source){
+        prefs.edit().putString("CitySource", source).apply();
+    }
+
+    public String getCitySourse(){
+        return prefs.getString("CitySource", "GPS");//or List
     }
 }
