@@ -1,4 +1,4 @@
-package com.nllk.megaweatherapplication.ui;
+package com.nllk.megaweatherapplication;
 
 import android.app.AlertDialog;
 import android.app.Dialog;

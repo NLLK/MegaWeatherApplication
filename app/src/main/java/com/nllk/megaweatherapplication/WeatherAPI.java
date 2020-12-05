@@ -8,21 +8,22 @@ import java.util.Locale;
 
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 public class WeatherAPI
 {
     private static final String OPEN_WEATHER_MAP_API_FORECAST =
-            "https://api.openweathermap.org/data/2.5/onecall?lat=%s&lon=%s&exclude=hourly,minutely&lang=ru&units=metric";
+            "https://api.openweathermap.org/data/2.5/onecall?lat=%s&lon=%s&exclude=hourly,minutely&lang=ru&units=%s";
     private static final String OPEN_WEATHER_MAP_API_CITY =
-            "https://api.openweathermap.org/data/2.5/weather?q=%s&units=metric&lang=ru";
+            "https://api.openweathermap.org/data/2.5/weather?q=%s&units=%s&lang=ru";
     private static final String OPEN_WEATHER_MAP_API_ZIP =
-            "https://api.openweathermap.org/data/2.5/weather?zip=%s&units=metric&lang=ru";
+            "https://api.openweathermap.org/data/2.5/weather?zip=%s&units=%s&lang=ru";
 
-    public static JSONObject getJSONCity(Context context, String city){
+    public static JSONObject getJSONCity(MainPageWeather activity, String city){
         try {
             Log.i("Weather", "Get JSON");
-            URL url = new URL(String.format(OPEN_WEATHER_MAP_API_CITY, city));
+            URL url = new URL(String.format(OPEN_WEATHER_MAP_API_CITY, city, getSystem(activity)));
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 
             connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
@@ -46,7 +47,7 @@ public class WeatherAPI
 
             JSONObject coord =  data.getJSONObject("coord");
 
-            url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, coord.getString("lat"), coord.getString("lon")));
+            url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, coord.getString("lat"), coord.getString("lon"), getSystem(activity)));
             connection = (HttpURLConnection)url.openConnection();
 
             connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
@@ -75,10 +76,10 @@ public class WeatherAPI
             return null;
         }
     }
-    public static JSONObject getJSON(Context context, String zip){
+    public static JSONObject getJSON(MainPageWeather activity, String zip){
         try {
             Log.i("Weather", "Get JSON");
-            URL url = new URL(String.format(OPEN_WEATHER_MAP_API_ZIP, zip));
+            URL url = new URL(String.format(OPEN_WEATHER_MAP_API_ZIP, zip, getSystem(activity)));
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 
             connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
@@ -102,7 +103,7 @@ public class WeatherAPI
 
             JSONObject coord =  data.getJSONObject("coord");
 
-            url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, coord.getString("lat"), coord.getString("lon")));
+            url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, coord.getString("lat"), coord.getString("lon"), getSystem(activity)));
             connection = (HttpURLConnection)url.openConnection();
 
             connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
@@ -130,5 +131,13 @@ public class WeatherAPI
             e.printStackTrace();
             return null;
         }
+    }
+    private static String getSystem(Activity context)
+    {
+        Preferencies preferencies = new Preferencies(context);
+        String degrees = preferencies.getDegrees();
+        String system = "metric";
+        if (degrees!="C") system = "imperial";
+        return  system;
     }
 }

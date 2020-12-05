@@ -48,4 +48,12 @@ public class Preferencies {
     public String getCitySourse(){
         return prefs.getString("CitySource", "GPS");//ZIP or Name
     }
+
+    public void setDegrees(String source){
+        prefs.edit().putString("Degrees", source).apply();
+    }
+
+    public String getDegrees(){
+        return prefs.getString("Degrees", "C");
+    }
 }

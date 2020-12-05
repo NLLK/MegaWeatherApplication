@@ -105,6 +105,7 @@
         app:layout_constraintVertical_bias="0.591" />
 
     <androidx.gridlayout.widget.GridLayout
+        android:id="@+id/gridLayout"
         android:layout_width="411dp"
         android:layout_height="135dp"
         android:padding="12dp"
@@ -171,6 +172,19 @@
             app:layout_row="3" />
 
     </androidx.gridlayout.widget.GridLayout>
+
+    <Switch
+        android:id="@+id/switchDegrees"
+        android:layout_width="52dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="4dp"
+        android:checked="false"
+        android:showText="true"
+        android:textOff="℃"
+        android:textOn="°F"
+        app:layout_constraintBottom_toTopOf="@+id/gridLayout"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

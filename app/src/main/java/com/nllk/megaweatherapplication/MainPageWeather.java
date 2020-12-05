@@ -22,11 +22,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.chip.Chip;
-import com.nllk.megaweatherapplication.ui.ChooseCityDialog;
 
 import org.json.JSONObject;
 
@@ -52,6 +52,7 @@ public class MainPageWeather extends AppCompatActivity {
     TextView pressureField;
     TextView humidityField;
     TextView chanceOfRainField;
+    Switch switchDegrees;
     Chip chipGPS;
     JSONObject lastJSON;
     ImageView weatherIcon;
@@ -76,6 +77,16 @@ public class MainPageWeather extends AppCompatActivity {
         weatherIcon = findViewById(R.id.weather_icon);
         chipGPS = findViewById(R.id.chip_gps);
         chipGPS.setOnClickListener(view -> showGPSChip());
+        switchDegrees = findViewById(R.id.switchDegrees);
+        switchDegrees.setOnCheckedChangeListener((compoundButton, b) ->
+        {
+            if (preferencies.getDegrees().equals("C")) {
+                preferencies.setDegrees("F");
+            } else {
+                preferencies.setDegrees("C");
+            }
+            updateAccordingToSource();
+        });
 
         windField = findViewById(R.id.wind_field);
         pressureField = findViewById(R.id.pressure_field);
@@ -100,10 +111,10 @@ public class MainPageWeather extends AppCompatActivity {
         preferencies = new Preferencies(this);
         reloadLocation(null);
         preferencies.setCitySourse("GPS");
+        preferencies.setDegrees("C");
     }
 
-    private void showGPSChip()
-    {
+    private void showGPSChip() {
         chipGPS.setVisibility(View.INVISIBLE);
         reloadLocation(null);
         updateWeatherData();
@@ -112,43 +123,23 @@ public class MainPageWeather extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-
         updateAccordingToSource();
-
-/*        if (lastJSON==null) updateWeatherData(preferencies.getZipcode());
-        else {
-            Date cals = Calendar.getInstance(TimeZone.getDefault()).getTime();
-            Long cur = System.currentTimeMillis();
-            Long lastUpdate = null;
-            try {
-                lastUpdate = lastJSON.getJSONObject("current").getLong("dt") * 1000;
-            } catch (JSONException e) {
-                e.printStackTrace();
-            } finally {
-                if (lastUpdate-cur > 5*60*1000) updateWeatherData(preferencies.getZipcode());
-            }
-        }*/
     }
 
-    public void updateAccordingToSource()
-    {
-        switch (preferencies.getCitySourse())
-        {
-            case "GPS":
-            {
+    public void updateAccordingToSource() {
+        switch (preferencies.getCitySourse()) {
+            case "GPS": {
                 chipGPS.setVisibility(View.GONE);
                 reloadLocation(null);
                 updateWeatherData();
                 break;
             }
-            case "Name":
-            {
+            case "Name": {
                 chipGPS.setVisibility(View.VISIBLE);
                 updateWeatherDataCity();
                 break;
             }
-            case "ZIP":
-            {
+            case "ZIP": {
                 chipGPS.setVisibility(View.VISIBLE);
                 updateWeatherData();
                 break;
@@ -162,46 +153,36 @@ public class MainPageWeather extends AppCompatActivity {
         locationManager.removeUpdates(locationListener);
     }
 
-    private void setWeatherIcon(String iconId){
-        Thread t = new Thread()  {
+    private void setWeatherIcon(String iconId) {
+        Thread t = new Thread() {
             @Override
             public void run() {
                 try {
-                    final Bitmap bitmap = BitmapFactory.decodeStream(new URL("https://openweathermap.org/img/wn/"+iconId+"@2x.png").openStream());
+                    final Bitmap bitmap = BitmapFactory.decodeStream(new URL("https://openweathermap.org/img/wn/" + iconId + "@2x.png").openStream());
                     weatherIcon.post(new Runnable() {
                         @Override
                         public void run() {
                             weatherIcon.setImageBitmap(bitmap);
                         }
                     });
-                } catch (Exception e) { e.printStackTrace(); }
-            };
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            ;
         };
         t.start();
     }
-    private void updateWeatherData(){
+
+    private void updateWeatherData() {
+        MainPageWeather activity = this;
         String zipcode = preferencies.getZipcode();
-        new Thread(){
-            public void run(){
-                final JSONObject json = WeatherAPI.getJSON(getApplicationContext(), zipcode);
+        new Thread() {
+            public void run() {
+                final JSONObject json = WeatherAPI.getJSON(activity, zipcode);
                 lastJSON = json;
-                if(json == null){
-                    handler.post(() -> Toast.makeText(getApplicationContext(),
-                            "Ошибка! Город не обнаружен!",
-                            Toast.LENGTH_LONG).show());
-                } else {
-                    handler.post(() -> renderWeather(json));
-                }
-            }
-        }.start();
-    }
-    private void updateWeatherDataCity(){
-        String city = preferencies.getCity();
-        new Thread(){
-            public void run(){
-                final JSONObject json = WeatherAPI.getJSONCity(getApplicationContext(), city);
-                lastJSON = json;
-                if(json == null){
+                if (json == null) {
                     handler.post(() -> Toast.makeText(getApplicationContext(),
                             "Ошибка! Город не обнаружен!",
                             Toast.LENGTH_LONG).show());
@@ -212,47 +193,86 @@ public class MainPageWeather extends AppCompatActivity {
         }.start();
     }
 
-    private void renderWeather(JSONObject json){
+    private void updateWeatherDataCity() {
+        String city = preferencies.getCity();
+        MainPageWeather activity = this;
+        new Thread() {
+            public void run() {
+                final JSONObject json = WeatherAPI.getJSONCity(activity, city);
+                lastJSON = json;
+                if (json == null) {
+                    handler.post(() -> Toast.makeText(getApplicationContext(),
+                            "Ошибка! Город не обнаружен!",
+                            Toast.LENGTH_LONG).show());
+                } else {
+                    handler.post(() -> renderWeather(json));
+                }
+            }
+        }.start();
+    }
+
+    private void renderWeather(JSONObject json) {
         try {
             cityField.setText(json.getString("city"));
 
             JSONObject main = json.getJSONObject("current");
             JSONObject daily = json.getJSONArray("daily").getJSONObject(0);
-            currentTemperatureField.setText((int)main.getDouble("temp")+ " ℃");
 
-            int deg = main.getInt("wind_deg")/45;
-            String direction="";
-            switch (deg)
-            {
-                case 0: direction = "С"; break;
-                case 1: direction = "С/В"; break;
-                case 2: direction = "В"; break;
-                case 3: direction = "Ю/В"; break;
-                case 4: direction = "Ю"; break;
-                case 5: direction = "Ю/З"; break;
-                case 6: direction = "З"; break;
-                case 7: direction = "С/З"; break;
+            String tempDegrees = " ℃";
+            if (preferencies.getDegrees().equals("F")) tempDegrees = " °F";
+
+            currentTemperatureField.setText((int) main.getDouble("temp") + tempDegrees);
+
+            int deg = main.getInt("wind_deg") / 45;
+            String direction = "";
+            switch (deg) {
+                case 0:
+                    direction = "С";
+                    break;
+                case 1:
+                    direction = "С/В";
+                    break;
+                case 2:
+                    direction = "В";
+                    break;
+                case 3:
+                    direction = "Ю/В";
+                    break;
+                case 4:
+                    direction = "Ю";
+                    break;
+                case 5:
+                    direction = "Ю/З";
+                    break;
+                case 6:
+                    direction = "З";
+                    break;
+                case 7:
+                    direction = "С/З";
+                    break;
             }
 
-            String wind_speed = String.valueOf((int)Double.parseDouble(main.getString("wind_speed")));
+            String wind_speed = String.valueOf((int) Double.parseDouble(main.getString("wind_speed")));
 
-            windField.setText(wind_speed+" м/с, "+direction);
+            String speedDegrees = " м/с, ";
+            if (preferencies.getDegrees().equals("F")) speedDegrees = " м/ч, ";
+            windField.setText(wind_speed + speedDegrees + direction);
 
-            pressureField.setText(main.getString("pressure")+" мм рт.ст.");
-            humidityField.setText(main.getString("humidity")+"%");
+            pressureField.setText(main.getString("pressure") + " мм рт.ст.");
+            humidityField.setText(main.getString("humidity") + "%");
 
-            String pop = String.valueOf((int)Double.parseDouble(daily.getString("pop"))*100);
-            chanceOfRainField.setText( pop+"%");
+            String pop = String.valueOf((int) Double.parseDouble(daily.getString("pop")) * 100);
+            chanceOfRainField.setText(pop + "%");
 
             DateFormat df = DateFormat.getTimeInstance();
-            String updatedOn = df.format(new Date(main.getLong("dt")*1000));
+            String updatedOn = df.format(new Date(main.getLong("dt") * 1000));
             updatedField.setText("Обновлено в " + updatedOn);
 
             JSONObject details = main.getJSONArray("weather").getJSONObject(0);
             detailsField.setText(details.getString("description"));
             setWeatherIcon(details.getString("icon"));
 
-        }catch(Exception e){
+        } catch (Exception e) {
             Log.e("Weather", "One or more fields not found in the JSON data");
         }
     }
@@ -267,25 +287,22 @@ public class MainPageWeather extends AppCompatActivity {
         @Override
         public void onProviderEnabled(String provider) {
             if (getApplicationContext().checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && getApplicationContext().checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions((Activity) getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);}
+                ActivityCompat.requestPermissions((Activity) getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);
+            }
             editLocation(locationManager.getLastKnownLocation(provider));
         }
     };
 
-    private void updateLocation()
-    {
+    private void updateLocation() {
         Geocoder geocoder = new Geocoder(this, Locale.ENGLISH);
-        try
-        {
+        try {
             List<Address> addressList = geocoder.getFromLocation(currentLocation.getLatitude(), currentLocation.getLongitude(), 10);
 
-            if (addressList!=null)
-            {
+            if (addressList != null) {
                 String zip = addressList.get(0).getPostalCode();
-                preferencies.setZipcode(zip+","+addressList.get(0).getCountryCode());
+                preferencies.setZipcode(zip + "," + addressList.get(0).getCountryCode());
                 //updateWeatherData(preferencies.getZipcode());
-            }
-            else {
+            } else {
                 handler.post(() -> Toast.makeText(getApplicationContext(),
                         "Ошибка! Город не обнаружен.",
                         Toast.LENGTH_LONG).show());
@@ -295,21 +312,22 @@ public class MainPageWeather extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     private void editLocation(Location location) {
         if (location == null)
             return;
         currentLocation = location;
     }
-    public void reloadLocation(View view)
-    {
+
+    public void reloadLocation(View view) {
         Log.i("Weather", "Reload Location");
         if (getApplicationContext().checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 getApplicationContext().checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions((Activity) getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000 * 10, 10, locationListener);
-        locationManager.requestLocationUpdates( LocationManager.NETWORK_PROVIDER, 1000 * 10, 10, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 10, 10, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 10, 10, locationListener);
         Runnable runnable = () -> {
-            while (currentLocation==null) {
+            while (currentLocation == null) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -321,16 +339,14 @@ public class MainPageWeather extends AppCompatActivity {
         Thread thread = new Thread(runnable);
         thread.start();
     }
-    public void reloadView(View view)
-    {
-        Log.i("Weather", "Reload View");
-        if (lastJSON==null) updateWeatherData();
-        else renderWeather(lastJSON);
 
+    public void reloadView(View view) {
+        Log.i("Weather", "Reload View");
+        updateAccordingToSource();
     }
-    public void callDialog()
-    {
+
+    public void callDialog() {
         ChooseCityDialog dialog = new ChooseCityDialog();
-        dialog.show(getSupportFragmentManager(),"ChooseCity");
+        dialog.show(getSupportFragmentManager(), "ChooseCity");
     }
 }
