@@ -1,33 +1,246 @@
 package com.nllk.megaweatherapplication.ui.home;
 
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.nllk.megaweatherapplication.Preferencies;
 import com.nllk.megaweatherapplication.R;
+import com.nllk.megaweatherapplication.WeatherAPI;
+
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.URL;
+import java.text.DateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.content.Context.LOCATION_SERVICE;
 
 public class HomeFragment extends Fragment {
 
-    private HomeViewModel homeViewModel;
+    Typeface font;
 
-    public View onCreateView(@NonNull LayoutInflater inflater,
-            ViewGroup container, Bundle savedInstanceState) {
-        homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
+    TextView cityField;
+    TextView detailsField;
+    TextView currentTemperatureField;
+    TextView updatedField;
+    TextView windField;
+    TextView pressureField;
+    TextView humidityField;
+    TextView chanceOfRainField;
+
+    ImageView weatherIcon;
+    Preferencies preferencies;
+
+    Location currentLocation;
+
+    private LocationManager locationManager;
+
+    Handler handler = new Handler();
+
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
         View root = inflater.inflate(R.layout.fragment_home, container, false);
-        final TextView textView = root.findViewById(R.id.text_home);
-        homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
-            }
-        });
+        cityField = root.findViewById(R.id.city_field);
+        detailsField = root.findViewById(R.id.details_field);
+        updatedField = root.findViewById(R.id.updated_field);
+        currentTemperatureField = root.findViewById(R.id.current_temperature_field);
+        weatherIcon = root.findViewById(R.id.weather_icon);
+
+        windField = root.findViewById(R.id.wind_field);
+        pressureField = root.findViewById(R.id.pressure_field);
+        humidityField = root.findViewById(R.id.humidity_field);
+        chanceOfRainField = root.findViewById(R.id.chance_of_rain_field);
+
+        font = Typeface.createFromAsset(getActivity().getAssets(), "fonts/LatoMedium.ttf");
+
+        cityField.setTypeface(font);
+        detailsField.setTypeface(font);
+        updatedField.setTypeface(font);
+        currentTemperatureField.setTypeface(font);
+        windField.setTypeface(font);
+        pressureField.setTypeface(font);
+        humidityField.setTypeface(font);
+        chanceOfRainField.setTypeface(font);
+
+        Button reload  = root.findViewById(R.id.btnReloadLocation);
+        reload.setOnClickListener(view -> reloadLocation(null));
+
+        locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+        preferencies = new Preferencies(getActivity());
+        reloadLocation(null);
         return root;
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        reloadLocation(null);
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        locationManager.removeUpdates(locationListener);
+    }
+
+    private void setWeatherIcon(String iconId){
+        Thread t = new Thread()  {
+            @Override
+            public void run() {
+                try {
+                    final Bitmap bitmap = BitmapFactory.decodeStream(new URL("https://openweathermap.org/img/wn/"+iconId+"@2x.png").openStream());
+                    weatherIcon.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            weatherIcon.setImageBitmap(bitmap);
+                        }
+                    });
+                } catch (Exception e) { e.printStackTrace(); }
+            };
+        };
+        t.start();
+    }
+    private void updateWeatherData(final String city){
+        new Thread(){
+            public void run(){
+
+                final JSONObject json = WeatherAPI.getJSON(getActivity().getApplicationContext(), city);
+                if(json == null){
+                    handler.post(() -> Toast.makeText(getActivity().getApplicationContext(),
+                            "А нет такого города, хах",
+                            Toast.LENGTH_LONG).show());
+                } else {
+                    handler.post(() -> renderWeather(json));
+                }
+            }
+        }.start();
+    }
+
+    private void renderWeather(JSONObject json){
+        try {
+            //город из другого запроса надо брать, по идеи
+            cityField.setText(json.getString("city"));
+
+            JSONObject main = json.getJSONObject("current");
+            JSONObject daily = json.getJSONArray("daily").getJSONObject(0);
+            currentTemperatureField.setText((int)main.getDouble("temp")+ " ℃");
+            windField.setText(main.getString("wind_speed"));
+            //TODO: направление
+            pressureField.setText(main.getString("pressure")+" мм рт.ст.");
+            humidityField.setText(main.getString("humidity")+"%");
+
+            chanceOfRainField.setText(daily.getString("pop")+"%");
+
+            DateFormat df = DateFormat.getTimeInstance();
+            String updatedOn = df.format(new Date(main.getLong("dt")*1000));
+            updatedField.setText("Последнее обновление: " + updatedOn);
+
+            JSONObject details = main.getJSONArray("weather").getJSONObject(0);
+            detailsField.setText(details.getString("description"));
+            setWeatherIcon(details.getString("icon"));
+
+        }catch(Exception e){
+            Log.e("Weather", "One or more fields not found in the JSON data");
+        }
+    }
+
+    private LocationListener locationListener = new LocationListener() {
+
+        @Override
+        public void onLocationChanged(Location location) {
+            editLocation(location);
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            if (getActivity().getApplicationContext().checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && getActivity().getApplicationContext().checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions((Activity) getActivity().getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);}
+            editLocation(locationManager.getLastKnownLocation(provider));
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+        }
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+    };
+
+    private void editView()
+    {
+        Geocoder geocoder = new Geocoder(getActivity(), Locale.ENGLISH);
+        try
+        {
+            List<Address> addressList = geocoder.getFromLocation(currentLocation.getLatitude(), currentLocation.getLongitude(), 10);
+
+            if (addressList!=null)
+            {
+                String zip = addressList.get(0).getPostalCode();
+                preferencies.setZipcode(zip);
+                updateWeatherData(preferencies.getZipcode()+","+addressList.get(0).getCountryCode());
+            }
+            else {
+                handler.post(() -> Toast.makeText(getActivity().getApplicationContext(),
+                        "А нет такого города, хах",
+                        Toast.LENGTH_LONG).show());
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void editLocation(Location location) {
+        if (location == null)
+            return;
+        currentLocation = location;
+    }
+    public void reloadLocation(View view)
+    {
+        Log.i("Weather", "Reload Location");
+        if (getActivity().getApplicationContext().checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && getActivity().getApplicationContext().checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions((Activity) getActivity().getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000 * 10, 10, locationListener);
+        locationManager.requestLocationUpdates( LocationManager.NETWORK_PROVIDER, 1000 * 10, 10, locationListener);
+        Runnable runnable = () -> {
+            while (currentLocation==null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            handler.post(() -> editView());
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
     }
 }
