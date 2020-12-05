@@ -22,14 +22,14 @@
 
     <com.google.android.material.chip.Chip
         android:id="@+id/chip_gps"
-        android:layout_width="75dp"
+        android:layout_width="100dp"
         android:layout_height="40dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="via GPS"
         android:visibility="invisible"
-        android:text="GPS"
         app:chipIcon="@android:drawable/ic_menu_mylocation"
-        app:layout_constraintStart_toEndOf="@+id/city_field"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
@@ -38,8 +38,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:text="Город"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="30dp"
@@ -171,7 +171,6 @@
             app:layout_row="3" />
 
     </androidx.gridlayout.widget.GridLayout>
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

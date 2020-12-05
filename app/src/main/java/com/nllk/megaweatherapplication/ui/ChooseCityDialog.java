@@ -1,36 +1,65 @@
-package com.nllk.megaweatherapplication.ui.home;
+package com.nllk.megaweatherapplication.ui;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
 
+import com.nllk.megaweatherapplication.MainPageWeather;
+import com.nllk.megaweatherapplication.Preferencies;
 import com.nllk.megaweatherapplication.R;
+import com.nllk.megaweatherapplication.Transliteration;
+
+import org.w3c.dom.Text;
 
 public class ChooseCityDialog extends DialogFragment {
-
+    Preferencies preferencies;
+    TextView enterCityTextView;
+    AutoCompleteTextView autoCompleteview;
     @NonNull
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder=new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
-        View view = inflater.inflate(R.layout.choose_city_fragment, null,false);
+        preferencies = new Preferencies(getActivity());
+        View view = inflater.inflate(R.layout.choose_city_fragment, null);
 
-        AutoCompleteTextView autoCompleteview = view.findViewById(R.id.autoCompleteTextView);
+        autoCompleteview = view.findViewById(R.id.autoCompleteTextView);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), R.layout.support_simple_spinner_dropdown_item, getCitiesArray());
         autoCompleteview.setAdapter(adapter);
 
-        builder.setView(autoCompleteview);
-        // Остальной код
+        enterCityTextView = view.findViewById(R.id.enterCityTextView);
+
+        builder.setView(view)
+                .setPositiveButton("Показать погоду", (dialog, id) ->
+                {
+                    String text = autoCompleteview.getText().toString();
+                    if (text.matches("\\d+"))
+                    {
+                        preferencies.setZipcode(text+",RU");
+                        preferencies.setCitySourse("ZIP");
+
+                    }
+                    else
+                    {
+                        preferencies.setCity(Transliteration.cyr2lat(text));
+                        preferencies.setCitySourse("Name");
+                    }
+                    ((MainPageWeather)getActivity()).updateAccordingToSource();
+                }
+                )
+                .setNegativeButton("Отмена", null);
         return builder.create();
     }
-
 
     public String[] getCitiesArray() {
         return new String[]{"Абаза", "Абакан", "Абдулино", "Абинск", "Агидель", "Агрыз", "Адыгейск",

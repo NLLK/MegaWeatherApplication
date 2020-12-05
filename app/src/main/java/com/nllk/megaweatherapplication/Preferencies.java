@@ -46,6 +46,6 @@ public class Preferencies {
     }
 
     public String getCitySourse(){
-        return prefs.getString("CitySource", "GPS");//or List
+        return prefs.getString("CitySource", "GPS");//ZIP or Name
     }
 }

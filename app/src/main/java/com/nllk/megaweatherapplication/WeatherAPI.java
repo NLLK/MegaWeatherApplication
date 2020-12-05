@@ -23,8 +23,7 @@ public class WeatherAPI
         try {
             Log.i("Weather", "Get JSON");
             URL url = new URL(String.format(OPEN_WEATHER_MAP_API_CITY, city));
-            HttpURLConnection connection =
-                    (HttpURLConnection)url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 
             connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
 
@@ -45,8 +44,34 @@ public class WeatherAPI
             }
             else Log.e("Weather", "request code:"+data.getInt("cod"));
 
-            return data;
+            JSONObject coord =  data.getJSONObject("coord");
+
+            url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, coord.getString("lat"), coord.getString("lon")));
+            connection = (HttpURLConnection)url.openConnection();
+
+            connection.addRequestProperty("x-api-key","908cab75dea287a2d3e9fd5b65fbaf0d");
+
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+            json = new StringBuffer(1024);
+            tmp="";
+            while((tmp=reader.readLine())!=null)
+                json.append(tmp).append("\n");
+            reader.close();
+
+            JSONObject data2 = new JSONObject(json.toString());
+
+            if(data.getInt("cod") != 200){
+                Log.e("Weather", "request code:"+data.getInt("cod"));
+                return null;
+            }
+            else Log.e("Weather", "request code:"+data.getInt("cod"));
+
+            data2.put("city",data.getString("name"));
+
+            return data2;
         }catch(Exception e){
+            e.printStackTrace();
             return null;
         }
     }
