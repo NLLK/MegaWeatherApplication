@@ -30,17 +30,6 @@ public class Preferencies {
         prefs.edit().putString("zip", zip).apply();
     }
 
-/*    public String getLocation(){
-        String[] loc = new String[]{prefs.getString("lat",),};
-        return prefs.getString("zip", "644000, RU");
-    }*/
-
-/*    public void setLocation(Location loc){
-        prefs.edit()
-                .putString("lat", String.valueOf(loc.getLatitude()))
-                .putString("lon", String.valueOf(loc.getLongitude()))
-                .apply();
-    }*/
     public void setCitySourse(String source){
         prefs.edit().putString("CitySource", source).apply();
     }
@@ -54,6 +43,6 @@ public class Preferencies {
     }
 
     public String getDegrees(){
-        return prefs.getString("Degrees", "C");
+        return prefs.getString("Degrees", "Cel");
     }
 }

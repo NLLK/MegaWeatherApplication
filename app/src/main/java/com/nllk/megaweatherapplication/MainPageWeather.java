@@ -80,10 +80,10 @@ public class MainPageWeather extends AppCompatActivity {
         switchDegrees = findViewById(R.id.switchDegrees);
         switchDegrees.setOnCheckedChangeListener((compoundButton, b) ->
         {
-            if (preferencies.getDegrees().equals("C")) {
+            if (preferencies.getDegrees().equals("Cel")) {
                 preferencies.setDegrees("F");
             } else {
-                preferencies.setDegrees("C");
+                preferencies.setDegrees("Cel");
             }
             updateAccordingToSource();
         });
@@ -111,7 +111,7 @@ public class MainPageWeather extends AppCompatActivity {
         preferencies = new Preferencies(this);
         reloadLocation(null);
         preferencies.setCitySourse("GPS");
-        preferencies.setDegrees("C");
+        preferencies.setDegrees("Cel");
     }
 
     private void showGPSChip() {
@@ -258,7 +258,9 @@ public class MainPageWeather extends AppCompatActivity {
             if (preferencies.getDegrees().equals("F")) speedDegrees = " м/ч, ";
             windField.setText(wind_speed + speedDegrees + direction);
 
-            pressureField.setText(main.getString("pressure") + " мм рт.ст.");
+            int pressure = (int)(Double.parseDouble(main.getString("pressure"))*0.7500615758456601);
+
+            pressureField.setText(pressure + " мм рт.ст.");
             humidityField.setText(main.getString("humidity") + "%");
 
             String pop = String.valueOf((int) Double.parseDouble(daily.getString("pop")) * 100);
@@ -321,9 +323,8 @@ public class MainPageWeather extends AppCompatActivity {
 
     public void reloadLocation(View view) {
         Log.i("Weather", "Reload Location");
-        if (getApplicationContext().checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                getApplicationContext().checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions((Activity) getApplicationContext(), new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);
+        if (this.checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&  this.checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION}, 1);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000 * 10, 10, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000 * 10, 10, locationListener);
         Runnable runnable = () -> {

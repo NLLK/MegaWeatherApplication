@@ -137,7 +137,7 @@ public class WeatherAPI
         Preferencies preferencies = new Preferencies(context);
         String degrees = preferencies.getDegrees();
         String system = "metric";
-        if (degrees!="C") system = "imperial";
+        if (degrees.equals("F")) system = "imperial";
         return  system;
     }
 }
