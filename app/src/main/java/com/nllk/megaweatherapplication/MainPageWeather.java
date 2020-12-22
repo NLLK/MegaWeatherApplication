@@ -127,6 +127,7 @@ public class MainPageWeather extends AppCompatActivity {
     }
 
     public void updateAccordingToSource() {
+        Log.i("Weather", "Start Circle");
         switch (preferencies.getCitySourse()) {
             case "GPS": {
                 chipGPS.setVisibility(View.GONE);
@@ -212,6 +213,7 @@ public class MainPageWeather extends AppCompatActivity {
     }
 
     private void renderWeather(JSONObject json) {
+        Log.i("Weather", "Render view");
         try {
             cityField.setText(json.getString("city"));
 
@@ -296,6 +298,7 @@ public class MainPageWeather extends AppCompatActivity {
     };
 
     private void updateLocation() {
+        Log.i("Weather", "Update Location");
         Geocoder geocoder = new Geocoder(this, Locale.ENGLISH);
         try {
             List<Address> addressList = geocoder.getFromLocation(currentLocation.getLatitude(), currentLocation.getLongitude(), 10);
@@ -303,7 +306,6 @@ public class MainPageWeather extends AppCompatActivity {
             if (addressList != null) {
                 String zip = addressList.get(0).getPostalCode();
                 preferencies.setZipcode(zip + "," + addressList.get(0).getCountryCode());
-                //updateWeatherData(preferencies.getZipcode());
             } else {
                 handler.post(() -> Toast.makeText(getApplicationContext(),
                         "Ошибка! Город не обнаружен.",
@@ -316,6 +318,7 @@ public class MainPageWeather extends AppCompatActivity {
     }
 
     private void editLocation(Location location) {
+        Log.i("Weather", "Location edited");
         if (location == null)
             return;
         currentLocation = location;
